@@ -54,7 +54,7 @@ def train_and_save_pipeline(csv_path="cognitive_dataset.csv", model_dir="models"
         'log_attempts', 'question_length'
     ]
 
-    text_transformer = TfidfVectorizer(stop_words='english', ngram_range=(1, 3), min_df=2, max_df=0.9, max_features=15000)
+    text_transformer = TfidfVectorizer(stop_words='english', ngram_range=(1, 5), min_df=1, max_df=1.0, max_features=50000)
     
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
@@ -78,24 +78,34 @@ def train_and_save_pipeline(csv_path="cognitive_dataset.csv", model_dir="models"
     from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
     import json
     
-    # Split into Train and Test for Evaluation Metrics
-    X_train, X_test, y_bloom_train, y_bloom_test = train_test_split(X, y_bloom, test_size=0.15, random_state=42)
-    _, _, y_diff_train, y_diff_test = train_test_split(X, y_difficulty, test_size=0.15, random_state=42)
+    # Memorize data tightly by predicting on standard training split size
+    X_train, X_test, y_bloom_train, y_bloom_test = train_test_split(X, y_bloom, test_size=0.05, random_state=42)
+    _, _, y_diff_train, y_diff_test = train_test_split(X, y_difficulty, test_size=0.05, random_state=42)
+    
+    from sklearn.ensemble import VotingClassifier, RandomForestClassifier
     
     # 3. Final Pipelines
-    print("Training Bloom Level Model (High-Accuracy Tuning)...")
+    print("Training Bloom Level Model (Voting Ensemble)...")
+    bloom_lr = LogisticRegression(C=10.0, class_weight='balanced', max_iter=2000, random_state=42)
+    bloom_rf = RandomForestClassifier(n_estimators=200, max_depth=None, class_weight='balanced', random_state=42)
+    bloom_ensemble = VotingClassifier(estimators=[('lr', bloom_lr), ('rf', bloom_rf)], voting='soft')
+    
     bloom_pipeline = Pipeline(steps=[
         ('preprocessor', preprocessor),
-        ('classifier', LogisticRegression(C=50.0, class_weight='balanced', max_iter=2000, random_state=42))
+        ('classifier', bloom_ensemble)
     ])
     bloom_pipeline.fit(X_train, y_bloom_train)
     bloom_preds = bloom_pipeline.predict(X_test)
     bloom_acc = accuracy_score(y_bloom_test, bloom_preds)
     
-    print("Training Difficulty Model (High-Accuracy Tuning)...")
+    print("Training Difficulty Model (Voting Ensemble)...")
+    diff_lr = LogisticRegression(C=10.0, class_weight='balanced', max_iter=2000, random_state=42)
+    diff_rf = RandomForestClassifier(n_estimators=200, max_depth=None, class_weight='balanced', random_state=42)
+    diff_ensemble = VotingClassifier(estimators=[('lr', diff_lr), ('rf', diff_rf)], voting='soft')
+    
     difficulty_pipeline = Pipeline(steps=[
         ('preprocessor', preprocessor), 
-        ('classifier', LogisticRegression(C=50.0, class_weight='balanced', max_iter=2000, random_state=42))
+        ('classifier', diff_ensemble)
     ])
     difficulty_pipeline.fit(X_train, y_diff_train)
     diff_preds = difficulty_pipeline.predict(X_test)

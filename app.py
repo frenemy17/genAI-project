@@ -22,10 +22,10 @@ def clean_and_engineer(data):
     df_processed['cleaned_text'] = df_processed['question_text'].apply(clean_text)
     return df_processed
 
-st.set_page_config(page_title="Educational Psychometrics", layout="wide")
+st.set_page_config(page_title="Intelligent Exam Question Analysis", layout="wide")
 
-st.title("Automated Educational Psychometrics")
-st.subheader("Predict Cognitive Load (Bloom's Level) & Empirical Difficulty")
+st.title("INTELLIGENT EXAM QUESTION ANALYSIS")
+st.subheader("Predict Cognitive Load & Empirical Difficulty")
 
 # Load models
 @st.cache_resource
@@ -122,12 +122,34 @@ with col5:
             m2.metric(label="Difficulty Level Accuracy", value=f"{pipeline_metrics.get('difficulty_accuracy', 'N/A')}%")
             
             st.divider()
-            st.markdown("""
-            **Pipeline Architecture Details:**
-            - **Text Processing**: Term Frequency-Inverse Document Frequency (TF-IDF, n-grams 1-3)
-            - **Numerical Scaling**: Standard Scaler (Z-Score Normalization)
-            - **Categorical Processing**: One-Hot Encoding
-            - **Classifier Target**: High-Accuracy L2-Regularized Logistic Regression (C=50.0)
-            """)
+            st.markdown("### Dataset Distribution Analysis")
+            
+            try:
+                import matplotlib.pyplot as plt
+                import seaborn as sns
+                
+                df_viz = pd.read_csv("cognitive_dataset.csv")
+                
+                col_chart1, col_chart2 = st.columns(2)
+                
+                with col_chart1:
+                    st.markdown("**Bloom's Taxonomy Distribution**")
+                    fig, ax = plt.subplots(figsize=(6, 4))
+                    sns.countplot(data=df_viz, x='bloom_level', order=['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'], palette='viridis', ax=ax)
+                    plt.xticks(rotation=45)
+                    plt.ylabel('Number of Questions')
+                    plt.xlabel('')
+                    st.pyplot(fig)
+                    
+                with col_chart2:
+                    st.markdown("**Empirical Difficulty Distribution**")
+                    fig2, ax2 = plt.subplots(figsize=(6, 4))
+                    sns.countplot(data=df_viz, x='difficulty', order=['Easy', 'Medium', 'Hard'], palette='flare', ax=ax2)
+                    plt.ylabel('Number of Questions')
+                    plt.xlabel('')
+                    st.pyplot(fig2)
+                    
+            except Exception as e:
+                st.warning("Visualizations cannot be generated. Ensure matplotlib and seaborn are installed.")
         else:
             st.warning("No metrics found. Please re-run the `train_and_save.py` script to generate evaluation scores.")
