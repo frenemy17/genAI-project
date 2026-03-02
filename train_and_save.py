@@ -10,6 +10,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV
 
 # 1. Feature Engineering function
 def clean_and_engineer(data):
@@ -52,7 +54,7 @@ def train_and_save_pipeline(csv_path="cognitive_dataset.csv", model_dir="models"
         'log_attempts', 'question_length'
     ]
 
-    text_transformer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2), min_df=3, max_df=0.85, max_features=5000)
+    text_transformer = TfidfVectorizer(stop_words='english', ngram_range=(1, 3), min_df=2, max_df=0.9, max_features=15000)
     
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
@@ -77,23 +79,23 @@ def train_and_save_pipeline(csv_path="cognitive_dataset.csv", model_dir="models"
     import json
     
     # Split into Train and Test for Evaluation Metrics
-    X_train, X_test, y_bloom_train, y_bloom_test = train_test_split(X, y_bloom, test_size=0.2, random_state=42)
-    _, _, y_diff_train, y_diff_test = train_test_split(X, y_difficulty, test_size=0.2, random_state=42)
+    X_train, X_test, y_bloom_train, y_bloom_test = train_test_split(X, y_bloom, test_size=0.15, random_state=42)
+    _, _, y_diff_train, y_diff_test = train_test_split(X, y_difficulty, test_size=0.15, random_state=42)
     
     # 3. Final Pipelines
-    print("Training Bloom Level Model...")
+    print("Training Bloom Level Model (High-Accuracy Tuning)...")
     bloom_pipeline = Pipeline(steps=[
         ('preprocessor', preprocessor),
-        ('classifier', LogisticRegression(C=1.0, class_weight='balanced', max_iter=1000, random_state=42))
+        ('classifier', LogisticRegression(C=50.0, class_weight='balanced', max_iter=2000, random_state=42))
     ])
     bloom_pipeline.fit(X_train, y_bloom_train)
     bloom_preds = bloom_pipeline.predict(X_test)
     bloom_acc = accuracy_score(y_bloom_test, bloom_preds)
     
-    print("Training Difficulty Model...")
+    print("Training Difficulty Model (High-Accuracy Tuning)...")
     difficulty_pipeline = Pipeline(steps=[
         ('preprocessor', preprocessor), 
-        ('classifier', LogisticRegression(C=1.0, class_weight='balanced', max_iter=1000, random_state=42))
+        ('classifier', LogisticRegression(C=50.0, class_weight='balanced', max_iter=2000, random_state=42))
     ])
     difficulty_pipeline.fit(X_train, y_diff_train)
     diff_preds = difficulty_pipeline.predict(X_test)

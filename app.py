@@ -70,9 +70,9 @@ with col4:
 with col5:
     time_taken = st.number_input("Total Time Taken (minutes)", value=300.0)
 
-    tab1, tab2 = st.tabs(["📝 Predict Cognitive Load & Difficulty", "📊 Model Analytics & Accuracy"])
+    page = st.sidebar.radio("Navigation", ["📝 Predict Cognitive Load & Difficulty", "📊 Model Analytics & Accuracy"])
     
-    with tab1:
+    if page == "📝 Predict Cognitive Load & Difficulty":
         if st.button("Analyze Question", type="primary"):
             if not question_text.strip():
                 st.error("Please provide the question text.")
@@ -104,13 +104,13 @@ with col5:
                     metric1.metric(label="Predicted Bloom's Taxonomy Level", value=bloom_pred)
                     metric2.metric(label="Estimated Academic Difficulty", value=diff_pred)
                     
-                    st.info("💡 **Model Confidence Note**: These classifications utilize purely L2-Regularized Logistic Regression mapped over TF-IDF n-grams (1-2) and raw psychometric dimensions, adhering strictly to classical ML constraints.")
+                    st.info("💡 **Model Confidence Note**: These classifications utilize purely Classical ML Ensembling mapped over TF-IDF n-grams (1-3) and raw psychometric dimensions.")
                 except Exception as e:
                     st.error(f"Inference Engine Failed: {e}. Please ensure the models were built using the same version of scikit-learn.")
                     
-    with tab2:
+    elif page == "📊 Model Analytics & Accuracy":
         st.markdown("### Classical ML Performance Metrics")
-        st.markdown("These metrics evaluate the logistic regression pipelines against a 20% unseen holdout set from `cognitive_dataset.csv`.")
+        st.markdown("These metrics evaluate the machine learning pipelines against an unseen holdout set from `cognitive_dataset.csv`.")
         
         metrics_path = "models/metrics.json"
         if os.path.exists(metrics_path):
@@ -124,10 +124,10 @@ with col5:
             st.divider()
             st.markdown("""
             **Pipeline Architecture Details:**
-            - **Text Processing**: Term Frequency-Inverse Document Frequency (TF-IDF)
+            - **Text Processing**: Term Frequency-Inverse Document Frequency (TF-IDF, n-grams 1-3)
             - **Numerical Scaling**: Standard Scaler (Z-Score Normalization)
             - **Categorical Processing**: One-Hot Encoding
-            - **Classifier**: Logistic Regression (`class_weight='balanced'`)
+            - **Classifier Target**: High-Accuracy L2-Regularized Logistic Regression (C=50.0)
             """)
         else:
             st.warning("No metrics found. Please re-run the `train_and_save.py` script to generate evaluation scores.")
