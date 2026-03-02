@@ -109,8 +109,7 @@ with col5:
                     st.error(f"Inference Engine Failed: {e}. Please ensure the models were built using the same version of scikit-learn.")
                     
     elif page == "📊 Model Analytics & Accuracy":
-        st.markdown("### Classical ML Performance Metrics")
-        st.markdown("These metrics evaluate the machine learning pipelines against an unseen holdout set from `cognitive_dataset.csv`.")
+        st.markdown("### Model Performance & Detailed Insights")
         
         metrics_path = "models/metrics.json"
         if os.path.exists(metrics_path):
@@ -122,34 +121,40 @@ with col5:
             m2.metric(label="Difficulty Level Accuracy", value=f"{pipeline_metrics.get('difficulty_accuracy', 'N/A')}%")
             
             st.divider()
-            st.markdown("### Dataset Distribution Analysis")
+            st.markdown("### 🔍 Dataset Analytical Insights")
             
             try:
-                import matplotlib.pyplot as plt
-                import seaborn as sns
-                
                 df_viz = pd.read_csv("cognitive_dataset.csv")
                 
-                col_chart1, col_chart2 = st.columns(2)
+                # Insight 1: Time Taken vs Score Correlation
+                st.markdown("**1. Correlation: Time Taken vs. Success Rate**")
+                st.markdown("Does spending more time on a question correlate with higher student success?")
+                # We'll use a native Streamlit scatter chart
+                df_scatter = df_viz[['time_taken_minutes', 'correct_percentage']].rename(
+                    columns={'time_taken_minutes': 'Time Spent (min)', 'correct_percentage': 'Success Rate'}
+                )
+                st.scatter_chart(df_scatter, x='Time Spent (min)', y='Success Rate')
                 
-                with col_chart1:
-                    st.markdown("**Bloom's Taxonomy Distribution**")
-                    fig, ax = plt.subplots(figsize=(6, 4))
-                    sns.countplot(data=df_viz, x='bloom_level', order=['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'], palette='viridis', ax=ax)
-                    plt.xticks(rotation=45)
-                    plt.ylabel('Number of Questions')
-                    plt.xlabel('')
-                    st.pyplot(fig)
-                    
-                with col_chart2:
-                    st.markdown("**Empirical Difficulty Distribution**")
-                    fig2, ax2 = plt.subplots(figsize=(6, 4))
-                    sns.countplot(data=df_viz, x='difficulty', order=['Easy', 'Medium', 'Hard'], palette='flare', ax=ax2)
-                    plt.ylabel('Number of Questions')
-                    plt.xlabel('')
-                    st.pyplot(fig2)
-                    
+                st.markdown("---")
+                
+                # Insight 2: Difficulty Impact on Attempts
+                st.markdown("**2. Student Engagement by Empirical Difficulty**")
+                st.markdown("Average number of student attempts broken down by the question's difficulty rating.")
+                df_bar = df_viz.groupby('difficulty')['num_students_attempted'].mean().reset_index()
+                df_bar = df_bar.set_index('difficulty')
+                st.bar_chart(df_bar)
+                
+                st.markdown("---")
+                
+                # Insight 3: Bloom's Level Distribution
+                st.markdown("**3. Question Frequency Across Bloom's Taxonomy**")
+                st.markdown("The distribution of cognitive load requirements across the entire tested dataset.")
+                df_bloom = df_viz['bloom_level'].value_counts().reset_index()
+                df_bloom.columns = ['Bloom Taxonomy Level', 'Question Count']
+                df_bloom = df_bloom.set_index('Bloom Taxonomy Level')
+                st.bar_chart(df_bloom)
+                
             except Exception as e:
-                st.warning("Visualizations cannot be generated. Ensure matplotlib and seaborn are installed.")
+                st.warning("Could not load internal dataset for deep visualizations.")
         else:
             st.warning("No metrics found. Please re-run the `train_and_save.py` script to generate evaluation scores.")
