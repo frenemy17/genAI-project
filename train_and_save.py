@@ -72,24 +72,43 @@ def train_and_save_pipeline(csv_path="cognitive_dataset.csv", model_dir="models"
         ]
     )
     
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+    import json
+    
+    # Split into Train and Test for Evaluation Metrics
+    X_train, X_test, y_bloom_train, y_bloom_test = train_test_split(X, y_bloom, test_size=0.2, random_state=42)
+    _, _, y_diff_train, y_diff_test = train_test_split(X, y_difficulty, test_size=0.2, random_state=42)
+    
     # 3. Final Pipelines
     print("Training Bloom Level Model...")
     bloom_pipeline = Pipeline(steps=[
         ('preprocessor', preprocessor),
         ('classifier', LogisticRegression(C=1.0, class_weight='balanced', max_iter=1000, random_state=42))
     ])
-    bloom_pipeline.fit(X, y_bloom)
+    bloom_pipeline.fit(X_train, y_bloom_train)
+    bloom_preds = bloom_pipeline.predict(X_test)
+    bloom_acc = accuracy_score(y_bloom_test, bloom_preds)
     
     print("Training Difficulty Model...")
     difficulty_pipeline = Pipeline(steps=[
-        ('preprocessor', preprocessor), # Preprocessor fits again, but on identical X so it's fine
+        ('preprocessor', preprocessor), 
         ('classifier', LogisticRegression(C=1.0, class_weight='balanced', max_iter=1000, random_state=42))
     ])
-    difficulty_pipeline.fit(X, y_difficulty)
+    difficulty_pipeline.fit(X_train, y_diff_train)
+    diff_preds = difficulty_pipeline.predict(X_test)
+    diff_acc = accuracy_score(y_diff_test, diff_preds)
     
-    # 4. Save Models
+    # 4. Save Models and Metrics
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
+        
+    metrics = {
+        "bloom_accuracy": round(bloom_acc * 100, 2),
+        "difficulty_accuracy": round(diff_acc * 100, 2)
+    }
+    with open(os.path.join(model_dir, 'metrics.json'), 'w') as f:
+        json.dump(metrics, f)
         
     joblib.dump(bloom_pipeline, os.path.join(model_dir, 'bloom_pipeline.pkl'))
     joblib.dump(difficulty_pipeline, os.path.join(model_dir, 'difficulty_pipeline.pkl'))

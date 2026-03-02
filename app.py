@@ -3,7 +3,7 @@ import pandas as pd
 import joblib
 import os
 import numpy as np
-
+import json
 # Apply the same engineering feature functions expected by the pipeline
 def clean_and_engineer(data):
     df_processed = data.copy()
@@ -70,34 +70,64 @@ with col4:
 with col5:
     time_taken = st.number_input("Total Time Taken (minutes)", value=300.0)
 
-if st.button("Analyze Question", type="primary"):
-    if not question_text.strip():
-        st.error("Please provide the question text.")
-    else:
-        # Construct DataFrame record
-        input_dict = {
-            "question_text": question_text,
-            "subject": subject,
-            "topic": topic,
-            "avg_score": float(avg_score),
-            "correct_percentage": float(correct_pct),
-            "num_students_attempted": float(attempted),
-            "num_students_correct": float(correct),
-            "time_taken_minutes": float(time_taken)
-        }
+    tab1, tab2 = st.tabs(["📝 Predict Cognitive Load & Difficulty", "📊 Model Analytics & Accuracy"])
+    
+    with tab1:
+        if st.button("Analyze Question", type="primary"):
+            if not question_text.strip():
+                st.error("Please provide the question text.")
+            else:
+                # Construct DataFrame record
+                input_dict = {
+                    "question_text": question_text,
+                    "subject": subject,
+                    "topic": topic,
+                    "avg_score": float(avg_score),
+                    "correct_percentage": float(correct_pct),
+                    "num_students_attempted": float(attempted),
+                    "num_students_correct": float(correct),
+                    "time_taken_minutes": float(time_taken)
+                }
+                
+                input_df = pd.DataFrame([input_dict])
+                engineered_df = clean_and_engineer(input_df)
+                
+                # Inference
+                try:
+                    bloom_pred = bloom_model.predict(engineered_df)[0]
+                    diff_pred = difficulty_model.predict(engineered_df)[0]
+                    
+                    st.markdown("---")
+                    st.markdown("### Prediction Results")
+                    
+                    metric1, metric2 = st.columns(2)
+                    metric1.metric(label="Predicted Bloom's Taxonomy Level", value=bloom_pred)
+                    metric2.metric(label="Estimated Academic Difficulty", value=diff_pred)
+                    
+                    st.info("💡 **Model Confidence Note**: These classifications utilize purely L2-Regularized Logistic Regression mapped over TF-IDF n-grams (1-2) and raw psychometric dimensions, adhering strictly to classical ML constraints.")
+                except Exception as e:
+                    st.error(f"Inference Engine Failed: {e}. Please ensure the models were built using the same version of scikit-learn.")
+                    
+    with tab2:
+        st.markdown("### Classical ML Performance Metrics")
+        st.markdown("These metrics evaluate the logistic regression pipelines against a 20% unseen holdout set from `cognitive_dataset.csv`.")
         
-        input_df = pd.DataFrame([input_dict])
-        engineered_df = clean_and_engineer(input_df)
-        
-        # Inference
-        bloom_pred = bloom_model.predict(engineered_df)[0]
-        diff_pred = difficulty_model.predict(engineered_df)[0]
-        
-        st.markdown("---")
-        st.markdown("### Prediction Results")
-        
-        metric1, metric2 = st.columns(2)
-        metric1.metric(label="Predicted Bloom's Taxonomy Level", value=bloom_pred)
-        metric2.metric(label="Estimated Academic Difficulty", value=diff_pred)
-        
-        st.info("💡 **Model Confidence Note**: These classifications utilize purely L2-Regularized Logistic Regression mapped over TF-IDF n-grams (1-2) and raw psychometric dimensions, adhering strictly to non-deep-learning constraints.")
+        metrics_path = "models/metrics.json"
+        if os.path.exists(metrics_path):
+            with open(metrics_path, "r") as f:
+                pipeline_metrics = json.load(f)
+                
+            m1, m2 = st.columns(2)
+            m1.metric(label="Bloom's Level Accuracy", value=f"{pipeline_metrics.get('bloom_accuracy', 'N/A')}%")
+            m2.metric(label="Difficulty Level Accuracy", value=f"{pipeline_metrics.get('difficulty_accuracy', 'N/A')}%")
+            
+            st.divider()
+            st.markdown("""
+            **Pipeline Architecture Details:**
+            - **Text Processing**: Term Frequency-Inverse Document Frequency (TF-IDF)
+            - **Numerical Scaling**: Standard Scaler (Z-Score Normalization)
+            - **Categorical Processing**: One-Hot Encoding
+            - **Classifier**: Logistic Regression (`class_weight='balanced'`)
+            """)
+        else:
+            st.warning("No metrics found. Please re-run the `train_and_save.py` script to generate evaluation scores.")
