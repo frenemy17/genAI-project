@@ -180,10 +180,21 @@ elif page == "🤖 Agentic Assessment Assistant":
         "in pedagogical literature."
     )
 
-    # --- Set Groq API key from environment or use default ---
-    if "GROQ_API_KEY" not in os.environ:
-        # For local development, set your API key in .env file or environment
-        # For deployment, set it in Streamlit secrets or environment variables
+    # --- Set Groq API key from environment, Streamlit secrets, or user input ---
+    api_key = None
+    
+    # Try to get from Streamlit secrets (for deployment)
+    try:
+        api_key = st.secrets.get("GROQ_API_KEY")
+    except:
+        pass
+    
+    # Try to get from environment variable (for local development)
+    if not api_key:
+        api_key = os.environ.get("GROQ_API_KEY")
+    
+    # If still not found, ask user for input
+    if not api_key:
         st.sidebar.markdown("---")
         st.sidebar.subheader("⚙️ Configuration")
         api_key_input = st.sidebar.text_input(
@@ -196,6 +207,8 @@ elif page == "🤖 Agentic Assessment Assistant":
         else:
             st.info("💡 **Tip:** Enter your Groq API key in the sidebar to use the Agentic Assistant.")
             st.stop()
+    else:
+        os.environ["GROQ_API_KEY"] = api_key
 
     # --- Inputs ---
     subject = st.selectbox(
