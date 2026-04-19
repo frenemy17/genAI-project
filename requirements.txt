@@ -1,3 +1,4 @@
+# Milestone 1 — Classical ML
 streamlit
 pandas
 scikit-learn==1.4.0
@@ -5,3 +6,12 @@ joblib
 numpy
 matplotlib
 seaborn
+
+# Milestone 2 — Agentic AI (LangGraph + RAG)
+langgraph>=0.2.0
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-community>=0.3.0
+langchain-groq>=0.1.0
+chromadb>=0.5.0
+sentence-transformers>=2.7.0
