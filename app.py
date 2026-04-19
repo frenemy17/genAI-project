@@ -180,16 +180,22 @@ elif page == "🤖 Agentic Assessment Assistant":
         "in pedagogical literature."
     )
 
-    # --- Sidebar: API key ---
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("Agent Configuration")
-    groq_api_key = st.sidebar.text_input(
-        "Groq API Key (free)",
-        type="password",
-        help="Free key from https://console.groq.com/keys — no credit card needed",
-    )
-    if groq_api_key:
-        os.environ["GROQ_API_KEY"] = groq_api_key
+    # --- Set Groq API key from environment or use default ---
+    if "GROQ_API_KEY" not in os.environ:
+        # For local development, set your API key in .env file or environment
+        # For deployment, set it in Streamlit secrets or environment variables
+        st.sidebar.markdown("---")
+        st.sidebar.subheader("⚙️ Configuration")
+        api_key_input = st.sidebar.text_input(
+            "Groq API Key",
+            type="password",
+            help="Enter your Groq API key. Get one free at https://console.groq.com/keys"
+        )
+        if api_key_input:
+            os.environ["GROQ_API_KEY"] = api_key_input
+        else:
+            st.info("💡 **Tip:** Enter your Groq API key in the sidebar to use the Agentic Assistant.")
+            st.stop()
 
     # --- Inputs ---
     subject = st.selectbox(
@@ -235,13 +241,6 @@ elif page == "🤖 Agentic Assessment Assistant":
     run_btn = st.button("▶ Run Agent Analysis", type="primary", use_container_width=True)
 
     if run_btn:
-        if not groq_api_key:
-            st.error(
-                "⚠️ Please enter your Groq API key in the sidebar. "
-                "Get one free (no credit card) at https://console.groq.com/keys"
-            )
-            st.stop()
-
         lines = [l.strip() for l in questions_raw.strip().splitlines() if l.strip()]
         if len(lines) < 2:
             st.error("Please enter at least 2 questions to run a meaningful analysis.")

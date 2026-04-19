@@ -4,3 +4,27 @@ __pycache__/
 .env
 chroma_db/
 generate_report.js
+
+# Secrets
+.streamlit/secrets.toml
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Model files (optional - uncomment if models are too large)
+# models/*.pkl
